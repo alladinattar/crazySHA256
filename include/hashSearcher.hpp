@@ -10,6 +10,6 @@ class crazySHA{
   int numOfThreads;
  public:
   explicit crazySHA(int numOfThreads);
-  void startSerchParallels();
+  void startSearchParallels();
 };
 #endif // INCLUDE_HEADER_HPP_
