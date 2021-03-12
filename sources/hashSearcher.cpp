@@ -23,11 +23,11 @@
 
 #include "boost/log/attributes/named_scope.hpp"
 #include "boost/thread.hpp"
+#include "boost/thread/thread.hpp"
+#include "chrono"
 #include "iostream"
 #include "picosha2.h"
-#include "boost/thread/thread.hpp"
 #include "time.h"
-
 crazySHA::crazySHA(int num) {
   maxThreadNum = std::thread::hardware_concurrency();
   numOfThreads = num;
@@ -44,13 +44,20 @@ void startSearch() {
     std::string proimage = std::to_string(rand());
     picosha2::hash256_hex_string((proimage), hash_hex_str);
     if (hash_hex_str.substr(60, 4) == "0000") {
-      std::cout << hash_hex_str << std::endl;
+      BOOST_LOG_TRIVIAL(info)
+          << std::endl
+          << "hash: " << hash_hex_str << std::endl
+          << "data: " << proimage << std::endl
+          << "thread id: " << std::this_thread::get_id() << std::endl;
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
+    } else {
+      BOOST_LOG_TRIVIAL(trace)
+          << std::endl
+          << "hash: " << hash_hex_str << std::endl
+          << "data: " << proimage << std::endl
+          << "thread id: " << std::this_thread::get_id() << std::endl;
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
-    BOOST_LOG_TRIVIAL(info) << std::endl<< "hash: " << hash_hex_str << std::endl
-                               << "data: " << proimage << std::endl<<
-                                "thread id: " << boost::this_thread::get_id()<<std::endl;
-    //boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
-
   }
 }
 
@@ -58,7 +65,6 @@ void crazySHA::startSearchParallels() {
   std::thread *thrArray = new std::thread[numOfThreads];
   for (int i = 0; i < numOfThreads; ++i) {
     thrArray[i] = std::thread(startSearch);
-
   }
   for (int i = 0; i < numOfThreads; ++i) {
     thrArray[i].join();
