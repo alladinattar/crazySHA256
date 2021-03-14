@@ -47,17 +47,18 @@ crazySHA::crazySHA(int num, std::string file) {
 
 void crazySHA::startSearch() {
   srand(static_cast<size_t>(time(0)));
+  auto start = std::chrono::high_resolution_clock::now();
   while (true) {
     mutex.lock();
     std::string hash_hex_str;
     std::string proimage = std::to_string(rand());
-    auto start = std::chrono::high_resolution_clock::now();
     picosha2::hash256_hex_string((proimage), hash_hex_str);
-    auto stop = std::chrono::high_resolution_clock::now();
-    double duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          stop - start)
-                          .count();
     if (hash_hex_str.substr(60, 4) == "0000") {
+      auto stop = std::chrono::high_resolution_clock::now();
+      double duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+          stop - start)
+          .count();
+      start = stop;
       BOOST_LOG_SEV(slg, boost::log::trivial::info) << std::endl
                                << "source: " << std::hex << std::stol(proimage) << std::dec
                                << " hash: " << hash_hex_str
@@ -69,7 +70,6 @@ void crazySHA::startSearch() {
           {"duration", duration}
       };
       goodHashes.push_back(j);
-
 
     } else {
       BOOST_LOG_SEV(slg, boost::log::trivial::trace)
