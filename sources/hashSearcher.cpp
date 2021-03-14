@@ -1,73 +1,91 @@
 // Copyright 2020 Your Name <your_email>
 
-#include "hashSearcher.hpp"
-
-#include <boost/log/attributes/timer.hpp>
+#include <iostream>
+#include "../third-party/PicoSHA2/picosha2.h"
+#include <string>
+#include <chrono>
+#include <thread>
+#include <nlohmann/json.hpp>
+#include <mutex>
+#include <vector>
+#include <unistd.h>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
-#include <boost/log/sinks/sync_frontend.hpp>
-#include <boost/log/sinks/text_file_backend.hpp>
-#include <boost/log/sinks/text_ostream_backend.hpp>
-#include <boost/log/sources/logger.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/support/date_time.hpp>
 #include <boost/log/trivial.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/sources/logger.hpp>
 #include <boost/log/utility/setup/file.hpp>
-#include <boost/smart_ptr/make_shared_object.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <cstdlib>
-#include <hashSearcher.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/attributes/named_scope.hpp>
+#include "hashSearcher.hpp"
 
-#include "boost/log/attributes/named_scope.hpp"
-#include "boost/thread.hpp"
-#include "boost/thread/thread.hpp"
-#include "chrono"
-#include "iostream"
-#include "picosha2.h"
-#include "time.h"
-crazySHA::crazySHA(int num) {
+crazySHA::crazySHA(int num, std::string file) {
+  boost::log::add_common_attributes();
+  boost::log::add_console_log(std::clog, boost::log::keywords::format = "[%Severity%] %TimeStamp%: %Message%");
   maxThreadNum = std::thread::hardware_concurrency();
   numOfThreads = num;
+  nameOfFile = file;
   if (numOfThreads > maxThreadNum) {
     throw std::invalid_argument("Only " + std::to_string(maxThreadNum) +
                                 " streams available");
   }
+  boost::log::add_file_log
+      (
+          boost::log::keywords::file_name = "sample_%N.log",
+          boost::log::keywords::rotation_size = 10 * 1024 * 1024,
+          boost::log::keywords::time_based_rotation = boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
+          boost::log::keywords::format = "[%Severity%][%TimeStamp%]: %Message%"
+      );
+  for(int i = 0; i < numOfThreads; ++i){
+    thrArray.emplace_back(std::thread([&](){
+      startSearch();
+    }));
+  }
 }
 
-void startSearch() {
-  srand(static_cast<unsigned int>(time(0)));
+void crazySHA::startSearch() {
+  srand(static_cast<size_t>(time(0)));
   while (true) {
+    mutex.lock();
     std::string hash_hex_str;
     std::string proimage = std::to_string(rand());
+    auto start = std::chrono::high_resolution_clock::now();
     picosha2::hash256_hex_string((proimage), hash_hex_str);
+    auto stop = std::chrono::high_resolution_clock::now();
+    double duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          stop - start)
+                          .count();
     if (hash_hex_str.substr(60, 4) == "0000") {
-      BOOST_LOG_TRIVIAL(info)
-          << std::endl
-          << "hash: " << hash_hex_str << std::endl
-          << "data: " << proimage << std::endl
-          << "thread id: " << std::this_thread::get_id() << std::endl;
-      std::this_thread::sleep_for(std::chrono::microseconds(1));
+      BOOST_LOG_SEV(slg, boost::log::trivial::info) << std::endl
+                               << "sourse: " << std::hex << std::stol(proimage) << std::dec
+                               << " hash: " << hash_hex_str
+                               << " duration: " << duration
+                               << " thread: " << std::this_thread::get_id() << std::endl;
+      nlohmann::json j = {
+          {"sourse", proimage},
+          {"hash_hex", hash_hex_str},
+          {"duration", duration}
+      };
+      goodHashes.push_back(j);
+
+
     } else {
-      BOOST_LOG_TRIVIAL(trace)
-          << std::endl
-          << "hash: " << hash_hex_str << std::endl
-          << "data: " << proimage << std::endl
-          << "thread id: " << std::this_thread::get_id() << std::endl;
-      std::this_thread::sleep_for(std::chrono::microseconds(1));
+      BOOST_LOG_SEV(slg, boost::log::trivial::trace)
+                                << "source: " << std::hex << std::stol(proimage) << std::dec
+                                << " hash: " << hash_hex_str
+                                << " thread: " << std::this_thread::get_id() << std::endl;
     }
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    mutex.unlock();
   }
 }
 
-void crazySHA::startSearchParallels() {
-  std::thread *thrArray = new std::thread[numOfThreads];
-  for (int i = 0; i < numOfThreads; ++i) {
-    thrArray[i] = std::thread(startSearch);
-  }
-  for (int i = 0; i < numOfThreads; ++i) {
+crazySHA::~crazySHA() {
+  for( int i = 0; i < numOfThreads; ++i) {
     thrArray[i].join();
   }
-  delete[] thrArray;
 }
+

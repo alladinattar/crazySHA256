@@ -39,7 +39,7 @@ find_package(Threads)
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
         ${CMAKE_CURRENT_SOURCE_DIR}/sources/hashSearcher.cpp
-)
+         include/goodHashes.hpp)
 target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json
         ${Boost_LOG_SETUP_LIBRARY}
         ${Boost_LOG_LIBRARY}

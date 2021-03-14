@@ -15,6 +15,7 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/smart_ptr/make_shared_object.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <csignal>
 #include <cstdlib>
 
 #include "boost/log/attributes/named_scope.hpp"
@@ -24,14 +25,14 @@
 #include "thread"
 #include "time.h"
 
-void func(int m) { std::cout << m; }
-int main() {
-  /*if (argc>2){
-    throw std::invalid_argument("The script only takes one argument");
-  }*/
-  srand(static_cast<unsigned int>(time(0)));
-  crazySHA crazy = crazySHA(2);
-  crazy.startSearchParallels();
+int main(int argc, char *argv[]) {
+  if (argc!=3){
+    throw std::invalid_argument("The script only takes two arguments");
+  }else {
+    signal(SIGINT, crazySHA::signalInterceptor);
+    crazySHA hasher(std::atoi(argv[1]),argv[2]);
+    hasher.startSearch();
+  }
   /*while (true) {
     std::string hash_hex_str;
     std::string proimage = std::to_string(rand());
