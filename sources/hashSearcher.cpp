@@ -1,5 +1,4 @@
 // Copyright 2020 Your Name <your_email>
-
 #include <iostream>
 #include "../third-party/PicoSHA2/picosha2.h"
 #include <string>
@@ -60,12 +59,12 @@ void crazySHA::startSearch() {
                           .count();
     if (hash_hex_str.substr(60, 4) == "0000") {
       BOOST_LOG_SEV(slg, boost::log::trivial::info) << std::endl
-                               << "sourse: " << std::hex << std::stol(proimage) << std::dec
+                               << "source: " << std::hex << std::stol(proimage) << std::dec
                                << " hash: " << hash_hex_str
                                << " duration: " << duration
                                << " thread: " << std::this_thread::get_id() << std::endl;
       nlohmann::json j = {
-          {"sourse", proimage},
+          {"source", proimage},
           {"hash_hex", hash_hex_str},
           {"duration", duration}
       };
@@ -89,3 +88,5 @@ crazySHA::~crazySHA() {
   }
 }
 
+std::vector<nlohmann::json> crazySHA::goodHashes;
+std::string  crazySHA::nameOfFile = "logs.txt";

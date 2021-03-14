@@ -43,10 +43,10 @@
 
 class crazySHA{
  private:
-  std::string nameOfFile;
+  static std::string nameOfFile;
   int maxThreadNum;
   int numOfThreads;
-  std::vector<nlohmann::json> goodHashes;
+  static std::vector<nlohmann::json> goodHashes;
   std::mutex mutex;
   boost::log::sources::severity_logger<boost::log::trivial::severity_level> slg;
   std::vector<std::thread> thrArray;
@@ -54,11 +54,11 @@ class crazySHA{
 
   void startSearch();
   ~crazySHA();
-  void writeJSON(const std::string& file_name){
+   static void writeJSON(){
     std::ofstream outputFile;
     std::ifstream inputFile;
-    outputFile.open(file_name);
-    inputFile.open(file_name);
+    outputFile.open(nameOfFile);
+    inputFile.open(nameOfFile);
     nlohmann::json outJSON;
     if(inputFile.peek() != EOF)
       inputFile >> outJSON;
@@ -69,8 +69,8 @@ class crazySHA{
     outputFile.close();
   };
 
-  void signalInterceptor(int signum){
-    writeJSON("logs.json");
+   static void signalInterceptor(int signum){
+    writeJSON();
     sleep(1);
     std::cout << "\nProgram aborted with code " << --signum << "\n";
     exit(signum);
