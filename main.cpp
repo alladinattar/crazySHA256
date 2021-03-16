@@ -26,23 +26,24 @@
 #include "time.h"
 
 int main(int argc, char *argv[]) {
-  if (argc!=3){
+  if (argc != 3) {
     throw std::invalid_argument("The script only takes two arguments");
-  }else {
+  } else {
     signal(SIGINT, crazySHA::signalInterceptor);
-    crazySHA hasher(std::atoi(argv[1]),argv[2]);
+    crazySHA hasher(std::atoi(argv[1]), argv[2]);
     hasher.startSearch();
   }
   /*while (true) {
     std::string hash_hex_str;
     std::string proimage = std::to_string(rand());
-    picosha2::hash256_hex_string((*//*proimage*//*), hash_hex_str);
-    if (hash_hex_str.substr(60, 4) == "0000") {
-      std::cout << hash_hex_str << std::endl;
-      BOOST_LOG_TRIVIAL(trace) <<std::endl<< "hash: " << hash_hex_str << std::endl
-                               << "data: " << proimage << std::endl;
-    }
-  }*/
+    picosha2::hash256_hex_string((*/
+  /*proimage*/ /*), hash_hex_str);
+if (hash_hex_str.substr(60, 4) == "0000") {
+std::cout << hash_hex_str << std::endl;
+BOOST_LOG_TRIVIAL(trace) <<std::endl<< "hash: " << hash_hex_str << std::endl
+<< "data: " << proimage << std::endl;
+}
+}*/
 }
 
 /*int k = 3;
